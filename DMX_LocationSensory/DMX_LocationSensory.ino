@@ -8,7 +8,11 @@
 
 #include <DmxMaster.h>
 
+<<<<<<< HEAD
 //Alle kanalen voor 10 lampen R G B
+=======
+//With 10 LED pars to start, these are the relevant channels for R G B
+>>>>>>> origin/master
 int pinArrayR[] = {
   1, 7, 13, 19, 25, 31, 37, 43, 49, 55};
 int pinArrayG[] = {
