@@ -8,11 +8,7 @@
 
 #include <DmxMaster.h>
 
-<<<<<<< HEAD
 //Alle kanalen voor 10 lampen R G B
-=======
-//With 10 LED pars to start, these are the relevant channels for R G B
->>>>>>> origin/master
 int pinArrayR[] = {
   1, 7, 13, 19, 25, 31, 37, 43, 49, 55};
 int pinArrayG[] = {
@@ -74,9 +70,7 @@ void setup() {
 
 
 void loop(){
-  //Lees infrarood signaal
-  val = analogRead(infraPin);
-  val = ReadSens_and_Condition();
+
 
   unsigned long startMillis= millis();  // Start of sample window
   unsigned int peakToPeak = 0;   // peak-to-peak level
@@ -116,7 +110,10 @@ void loop(){
 //Custom functions
 
 void scannerLoop () {
-  if(val<100) {
+  //Lees infrarood signaal
+  val = analogRead(infraPin);
+  val = ReadSens_and_Condition();
+  while (val<100) {
     for(chnl = 0; chnl <= 4; chnl++) {
       for(Intens=0; Intens < 50; Intens++) {
         DmxMaster.write(pinArrayB_L[chnl],Intens);
@@ -137,13 +134,12 @@ void scannerLoop () {
             }
           }
         } 
-      }break; 
+      }
     }
-  } else {
-    for(int ii=0;ii<255;ii++) {
-      DmxMaster.write(ii,0);
-    }
+  } 
+
 }
+
 
 
 
@@ -249,6 +245,8 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
+
 
 
 
