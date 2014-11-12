@@ -127,19 +127,20 @@ void scannerLoop () { //Enter The Void on Hand Detection
   //Lees infrarood signaal
   val = analogRead(infraPin);
   val = ReadSens_and_Condition();
-  int burst = 0; //Count number of white-outs.
+  int burst = 0; //Count number of blue-outs.
   if (val<100) {
     while (burst <2) {
-    for(chnl = 0; chnl <= 4; chnl++) {
-      for(Intens=0; Intens < 50; Intens++) {
-        DmxMaster.write(pinArrayB_L[chnl],Intens);
-        DmxMaster.write(pinArrayB_R[chnl],Intens);
-        delay(5);
-        burst++;
+      for(chnl = 0; chnl <= 4; chnl++) {
+        for(Intens=0; Intens < 50; Intens++) {
+          DmxMaster.write(pinArrayB_L[chnl],Intens);
+          DmxMaster.write(pinArrayB_R[chnl],Intens);
+          delay(5);
+          burst++;
+        }
       }
-    }break;
-  } 
-}
+      break; //Exit from loop back to sensor reading
+    } 
+  }
 }
 
 void knightRider () { // Scan Through All Lights
@@ -243,6 +244,7 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
 
 
 
