@@ -6,9 +6,18 @@
  *  Door Dennis Neumann
  */
 
+// Speed Control Rotarie on     :Connector #1 (A0)
+// Intensity Control Rotarie on :Connector #2 (A1)
+// Infra Red Meter on           :Connector #3 (A2)
+// Audio Analog Meter on        :Connector #4 (A3)
+
+
+//------------------LIBRARIES-----------------------//
 #include <DmxMaster.h>
 
-//Alle kanalen voor 10 lampen R G B
+//==================CONSTANTS=======================//
+
+//10 Lights: Channels for R,G,B
 int pinArrayR[] = {
   1, 7, 13, 19, 25, 31, 37, 43, 49, 55};
 int pinArrayG[] = {
@@ -31,12 +40,15 @@ int pinArrayB_R[] = {
   33, 39, 45, 51, 57};  
 
 //Intensiteiteswaarde per kleurkanaal
-int Intens = 20;
+int Intens = 0;
 //Counter voor kanalen
 int chnl = 1;
+//Waarde InfraRood Sensor RAW
+int val = 0;
 //SensorAfstandswaarde
 int infraDist;
-
+//Sensor Analog Pin
+int infraPin = 2;
 
 //Rotaries voor snelheid en intensiteit
 int speedPin = 0;  
@@ -45,14 +57,16 @@ int intenPin = 1;
 int pins[NUMLIGHTS] = { 
   1, 7, 13, 19, 25, 31, 37, 43, 49, 55};
 
-int infraPin = 2;
-int val = 0;
-
+//Audio Measurements
 const int sampleWindow = 50; // Sample window width in mS (50 mS = 20Hz)
 unsigned int sample;
 
-
+//Intensity for VU Meter
 float inten;
+
+//==================END CONSTANTS=====================//
+
+//------------------START WORK------------------------//
 
 void setup() {
   DmxMaster.usePin(3);
@@ -68,10 +82,9 @@ void setup() {
   }
 }  
 
+//-----------------START LOOP-------------------------//
 
 void loop(){
-
-
   unsigned long startMillis= millis();  // Start of sample window
   unsigned int peakToPeak = 0;   // peak-to-peak level
 
@@ -100,16 +113,15 @@ void loop(){
   inten = mapfloat(volts, 0.0, 3.3, 0.0, 255.0);
 
   //functions!
-  VUmeter();
-  scannerLoop();
-  Serial.println(val);
+  VUmeter(); //Display Sound Levels 
+  scannerLoop(); //Enter the Void On Hand Detection!
+  // Serial.println(inten); //See if anything Works, uncomment if necessary
 }
 
 
-//------------------------------------------------------------------------------
-//Custom functions
+//======= THE MAGIC MOTHERFUCKER!!! ===================//
 
-void scannerLoop () {
+void scannerLoop () { //Enter The Void on Hand Detection
   //Lees infrarood signaal
   val = analogRead(infraPin);
   val = ReadSens_and_Condition();
@@ -137,14 +149,9 @@ void scannerLoop () {
       }
     }
   } 
-
 }
 
-
-
-
-
-void knightRider () {
+void knightRider () { // Scan Through All Lights
   static int pos = 0;       // the position of the brightest light in the light array
   static int direction = 1; // the direction the bright spot is travelling (1 or -1)
   int light;
@@ -193,7 +200,8 @@ int ReadSens_and_Condition(){
   return sval;
 }
 
-
+//VU Meter On Sound Levels From Mic with AGC
+// Quick and Dirty for Now.
 void VUmeter() {
 
   if (inten < 20) { //Laagste stand
@@ -240,7 +248,6 @@ void VUmeter() {
 
 
 //The Arduino Map function but for floats
-//From: http://forum.arduino.cc/index.php?topic=3922.0
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
