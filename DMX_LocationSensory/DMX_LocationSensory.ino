@@ -11,6 +11,8 @@
 // Infra Red Meter on           :Connector #3 (A2)
 // Audio Analog Meter on        :Connector #4 (A3)
 
+// And, also! put The AGC Mic on 3V!
+
 
 //------------------LIBRARIES-----------------------//
 #include <DmxMaster.h>
@@ -115,7 +117,7 @@ void loop(){
   //functions!
   VUmeter(); //Display Sound Levels 
   scannerLoop(); //Enter the Void On Hand Detection!
-  // Serial.println(inten); //See if anything Works, uncomment if necessary
+  Serial.println(val); //See if anything Works, uncomment if necessary
 }
 
 
@@ -131,23 +133,8 @@ void scannerLoop () { //Enter The Void on Hand Detection
         DmxMaster.write(pinArrayB_L[chnl],Intens);
         DmxMaster.write(pinArrayB_R[chnl],Intens);
         delay(5);
-        DmxMaster.write(pinArrayG_L[chnl],Intens);
-        DmxMaster.write(pinArrayG_R[chnl],Intens);
-        delay(2);
-        if (chnl>=4) {
-          for(chnl = 0; chnl <=4; chnl++) {
-            for(Intens =50; Intens >0; Intens--){
-              DmxMaster.write(pinArrayB_L[chnl],Intens);
-              DmxMaster.write(pinArrayB_R[chnl],Intens);
-              delay(5);
-              DmxMaster.write(pinArrayG_L[chnl],Intens);
-              DmxMaster.write(pinArrayG_R[chnl],Intens);
-              delay(2);
-            }
-          }
-        } 
       }
-    }
+    }break;
   } 
 }
 
