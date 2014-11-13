@@ -52,6 +52,15 @@ int infraDist;
 //Sensor Analog Pin
 int infraPin = 2;
 
+// Timer for scanners
+long interval = 500;
+long previousMillis = 0;
+
+//Bezoekersteller
+int VisiNumber = 0;
+
+
+
 // Counter for the hand trigger
 int handLoop = 1;
 
@@ -90,6 +99,7 @@ void setup() {
 //-----------------START LOOP-------------------------//
 
 void loop(){
+
   unsigned long startMillis= millis();  // Start of sample window
   unsigned int peakToPeak = 0;   // peak-to-peak level
 
@@ -123,7 +133,7 @@ void loop(){
   scannerLoop(); //Enter the Void On Hand Detection!
   //knightRider();
 
-  //Serial.println(val); //See if anything Works, uncomment if necessary
+  //Serial.println(inten); //See if anything Works, uncomment if necessary
 }
 
 
@@ -137,17 +147,38 @@ void scannerLoop () { //Enter The Void on Hand Detection
 
   if (handLoop == 1) {
     if (val<100) {
-      while (burst <2) {
+      while (burst <1) {
         //reset all to black
         for (int iii =0; iii <512; iii++) {
           DmxMaster.write(iii,0);
         }
-        // Iterate through lights by 6
-        for(chnl =4; chnl <512; chnl+=6) {
-          DmxMaster.write(chnl,255);
+        for(int slow = 0; slow < 255; slow++) {
+          DmxMaster.write(4,slow);
+          DmxMaster.write(10,slow);
+          DmxMaster.write(16,slow);
+          DmxMaster.write(22,slow);
+          DmxMaster.write(28,slow);
+          DmxMaster.write(34,slow);
+          DmxMaster.write(40,slow);
+          DmxMaster.write(46,slow);
+          DmxMaster.write(52,slow);
+          DmxMaster.write(58,slow);
           delay(30);
           burst++;
-          handLoop =1;
+          handLoop = 1;
+        }
+        for (int slowDown = 255; slowDown >0; slowDown--) {
+          DmxMaster.write(4,slowDown);
+          DmxMaster.write(10,slowDown);
+          DmxMaster.write(16,slowDown);
+          DmxMaster.write(22,slowDown);
+          DmxMaster.write(28,slowDown);
+          DmxMaster.write(34,slowDown);
+          DmxMaster.write(40,slowDown);
+          DmxMaster.write(46,slowDown);
+          DmxMaster.write(52,slowDown);
+          DmxMaster.write(58,slowDown);
+          delay(30);
         }
       }
       BackToBlack();
@@ -157,43 +188,49 @@ void scannerLoop () { //Enter The Void on Hand Detection
 
 
 void knightRider () { // Scan Through All Lights
-  static int pos = 0;       // the position of the brightest light in the light array
-  static int direction = 1; // the direction the bright spot is travelling (1 or -1)
-  int light;
-  int speed = analogRead(speedPin);  // how fast the light moves
-  int inten = analogRead(intenPin) >> 2;  // read the value and divide by 4 to get range 0 .. 255
+  const float pi = 3.14159;
+  int brightness, intDegrees = 90;
+  int count = 0;
+  int burst = 0; //Count number of blue-outs.
 
-  if (inten > 255) inten = 255;
-
-  if (handLoop == 2 ) {
+  if (handLoop == 2) {
     if (val<100) {
-      for (light=0 ; light < NUMLIGHTS ; light++) {
-        if (light == pos) {  // The light at this position is set bright      
-          DmxMaster.write(pins[light], inten);
-        } 
-        else if ( light == (pos+1) || light == (pos-0)) {
-          // This makes the two lights adjacent to the bright one glow at reduced intensity.
-          // It makes for a nicer effect
-          DmxMaster.write(pins[light], inten>>7);
-        } 
-        else {
-          // Digital I/O pins 5 & 6 don't seem to go dark if I do analogWrite(pins[light], 0)
-          // By doing digitalWrite it all looks correct
-          //DmxMaster.write(pins[light], 0);
-        }    
-      } BackToBlack();
-    }      
-    handLoop = 1;
+      while (burst < 2) {
+        for (count=0;count<10;count++) {
+          brightness = 255 - abs(255 * sin(intDegrees * pi / 180));
+          intDegrees++;
+          if (intDegrees < 270)
+            DmxMaster.write(pinArrayR[count], brightness);
+          else if (intDegrees > 299)
+            intDegrees = 90;
+          delay(20);
+        }
+        for (count=0;count<10;count++) {
+          brightness = 255 - abs(255 * sin(intDegrees * pi / 180));
+          intDegrees++;
+          if (intDegrees < 270)
+            DmxMaster.write(pinArrayG[count], brightness);
+          else if (intDegrees > 299)
+            intDegrees = 90;
+          delay(20);
+        }
+        for (count=0;count<10;count++) {
+          brightness = 255 - abs(255 * sin(intDegrees * pi / 180));
+          intDegrees++;
+          if (intDegrees < 270)
+            DmxMaster.write(pinArrayB[count], brightness);
+          else if (intDegrees > 299)
+            intDegrees = 90;
+          delay(20);
+        }
+        break;          
+      }
+      burst++;
+      handLoop = 1;      
+      BackToBlack();
+    }
   }
-
-  // move the light position
-  pos += direction;
-  // if we've reached the end, reverse directions
-  if (pos >= (NUMLIGHTS-1)) direction = -1;
-  if (pos <= 0) direction = 1;
-  delay(speed);
 }
-
 
 //Gemiddelde van Infra Sensor
 int ReadSens_and_Condition(){
@@ -214,15 +251,22 @@ int ReadSens_and_Condition(){
 void Visitors() {
   // Array of lights for Visitors Bar (purple)
   int visArray[] = {
-    31, 33, 37, 39, 43, 45, 49, 51};
-    
-    for (int xx = 0; xx < 9; xx+=2) {
+    31, 33, 37, 39, 43, 45, 49, 51        };
+
+
+  // Variable to store number of visitors
+  VisiNumber = analogRead(0);
+  VisiNumber = map (VisiNumber, 0, 1024, 0, 9);
+
+  for (int xx = 0; xx < VisiNumber; xx+=2) {
     DmxMaster.write(visArray[xx],255);
-    for (int yy =1; yy < 9; yy+=2) {
-     DmxMaster.write(visArray[yy],50);
+    for (int yy =1; yy < VisiNumber; yy+=2) {
+      DmxMaster.write(visArray[yy],50);      
     } 
-    }
-}
+  } 
+  VisiNumber =0;
+} 
+
 
 
 
@@ -231,7 +275,7 @@ void Visitors() {
 // Quick and Dirty for Now.
 void VUmeter() {
 
-  if (inten < 20) { //Laagste stand
+  if (inten < 50) { //Laagste stand
     DmxMaster.write(26,inten/2);
     DmxMaster.write(20,0);
     DmxMaster.write(14,0);
@@ -241,10 +285,18 @@ void VUmeter() {
   } 
   else if (inten < 60) {
     DmxMaster.write(26,inten);
-    DmxMaster.write(20,inten);
-    DmxMaster.write(14,inten/3);
+    DmxMaster.write(20,inten/2);
+    DmxMaster.write(14,inten/4);
     DmxMaster.write(8,0);
     DmxMaster.write(7,0);
+    DmxMaster.write(1,0);
+  } 
+  else if (inten < 80) {
+    DmxMaster.write(26,inten);
+    DmxMaster.write(20,inten);
+    DmxMaster.write(14,inten);
+    DmxMaster.write(8,inten/3);
+    DmxMaster.write(7,inten/2);
     DmxMaster.write(1,0);
   } 
   else if (inten < 100) {
@@ -253,21 +305,13 @@ void VUmeter() {
     DmxMaster.write(14,inten);
     DmxMaster.write(8,inten/3);
     DmxMaster.write(7,inten/2);
-    DmxMaster.write(1,0);
+    DmxMaster.write(1,inten/2);
   } 
-  else if (inten < 140) {
+  else if (inten < 120) { //hoogste stand
     DmxMaster.write(26,inten);
     DmxMaster.write(20,inten);
     DmxMaster.write(14,inten);
     DmxMaster.write(8,inten/3);
-    DmxMaster.write(7,inten/2);
-    DmxMaster.write(1,inten/2);
-  } 
-  else if (inten < 180) { //hoogste stand
-    DmxMaster.write(26,inten);
-    DmxMaster.write(20,inten);
-    DmxMaster.write(14,inten);
-    DmxMaster.write(8,inten);
     DmxMaster.write(7,inten);
     DmxMaster.write(1,inten);
   }
@@ -288,6 +332,15 @@ void BackToBlack() {
     }
   }
 }
+
+
+
+
+
+
+
+
+
 
 
 
