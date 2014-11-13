@@ -52,6 +52,9 @@ int infraDist;
 //Sensor Analog Pin
 int infraPin = 2;
 
+// Counter for the hand trigger
+int handLoop = 1;
+
 //Rotaries voor snelheid en intensiteit
 int speedPin = 0;  
 int intenPin = 1;  
@@ -116,8 +119,11 @@ void loop(){
 
   //functions!
   VUmeter(); //Display Sound Levels 
+  Visitors(); //Display number of visitors horizontal
   scannerLoop(); //Enter the Void On Hand Detection!
-  Serial.println(val); //See if anything Works, uncomment if necessary
+  //knightRider();
+
+  //Serial.println(val); //See if anything Works, uncomment if necessary
 }
 
 
@@ -128,20 +134,27 @@ void scannerLoop () { //Enter The Void on Hand Detection
   val = analogRead(infraPin);
   val = ReadSens_and_Condition();
   int burst = 0; //Count number of blue-outs.
-  if (val<100) {
-    while (burst <2) {
-      for(chnl = 0; chnl <= 4; chnl++) {
-        for(Intens=0; Intens < 50; Intens++) {
-          DmxMaster.write(pinArrayB_L[chnl],Intens);
-          DmxMaster.write(pinArrayB_R[chnl],Intens);
-          delay(5);
+
+  if (handLoop == 1) {
+    if (val<100) {
+      while (burst <2) {
+        //reset all to black
+        for (int iii =0; iii <512; iii++) {
+          DmxMaster.write(iii,0);
+        }
+        // Iterate through lights by 6
+        for(chnl =4; chnl <512; chnl+=6) {
+          DmxMaster.write(chnl,255);
+          delay(30);
           burst++;
+          handLoop =1;
         }
       }
-      break; //Exit from loop back to sensor reading
-    } 
+      BackToBlack();
+    }
   }
 }
+
 
 void knightRider () { // Scan Through All Lights
   static int pos = 0;       // the position of the brightest light in the light array
@@ -152,20 +165,25 @@ void knightRider () { // Scan Through All Lights
 
   if (inten > 255) inten = 255;
 
-  for (light=0 ; light < NUMLIGHTS ; light++) {
-    if (light == pos) {  // The light at this position is set bright      
-      DmxMaster.write(pins[light], inten);
-    } 
-    else if ( light == (pos+1) || light == (pos-0)) {
-      // This makes the two lights adjacent to the bright one glow at reduced intensity.
-      // It makes for a nicer effect
-      DmxMaster.write(pins[light], inten>>7);
-    } 
-    else {
-      // Digital I/O pins 5 & 6 don't seem to go dark if I do analogWrite(pins[light], 0)
-      // By doing digitalWrite it all looks correct
-      //DmxMaster.write(pins[light], 0);
-    }    
+  if (handLoop == 2 ) {
+    if (val<100) {
+      for (light=0 ; light < NUMLIGHTS ; light++) {
+        if (light == pos) {  // The light at this position is set bright      
+          DmxMaster.write(pins[light], inten);
+        } 
+        else if ( light == (pos+1) || light == (pos-0)) {
+          // This makes the two lights adjacent to the bright one glow at reduced intensity.
+          // It makes for a nicer effect
+          DmxMaster.write(pins[light], inten>>7);
+        } 
+        else {
+          // Digital I/O pins 5 & 6 don't seem to go dark if I do analogWrite(pins[light], 0)
+          // By doing digitalWrite it all looks correct
+          //DmxMaster.write(pins[light], 0);
+        }    
+      } BackToBlack();
+    }      
+    handLoop = 1;
   }
 
   // move the light position
@@ -191,6 +209,23 @@ int ReadSens_and_Condition(){
   sval = 255 - sval;  // invert output
   return sval;
 }
+
+// Number of visitors through the day
+void Visitors() {
+  // Array of lights for Visitors Bar (purple)
+  int visArray[] = {
+    31, 33, 37, 39, 43, 45, 49, 51};
+    
+    for (int xx = 0; xx < 9; xx+=2) {
+    DmxMaster.write(visArray[xx],255);
+    for (int yy =1; yy < 9; yy+=2) {
+     DmxMaster.write(visArray[yy],50);
+    } 
+    }
+}
+
+
+
 
 //VU Meter On Sound Levels From Mic with AGC
 // Quick and Dirty for Now.
@@ -244,6 +279,18 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
+//Reset all lights back to black
+void BackToBlack() {
+  for (int reset =0; reset < 512; reset++) {
+    for (int dimm = 255; dimm > 0; dimm--) {
+      DmxMaster.write(reset,dimm);
+    }
+  }
+}
+
+
+
 
 
 
